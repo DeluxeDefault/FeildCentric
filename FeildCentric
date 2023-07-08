@@ -1,0 +1,124 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@TeleOp(name = "FeildCentric")
+public class FeildCentric extends LinearOpMode {
+
+  private DcMotor rb;
+  private DcMotor lb;
+  private DcMotor lf;
+  private DcMotor rf;
+  private DcMotor arm;
+  private Servo claw;
+  private Servo flip;
+
+  
+ BNO055IMU imu;
+ Orientation angles = new Orientation();
+ 
+ double initYaw;
+ double adjustyaw;
+ 
+
+  /**
+   * This function is executed when this Op Mode is selected from the Driver Station.
+   */
+   
+  @Override
+  public void runOpMode() {
+    
+    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+    parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+    parameters.mode = BNO055IMU.SensorMode.IMU;
+    parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+    
+    imu = hardwareMap.get(BNO055IMU.class, "imu");
+    imu.initialize(parameters);
+    
+    angles = imu.getAngularOrientation(AxesReference.INTRINSIC,
+    AxesOrder.ZYX, AngleUnit.DEGREES);
+    
+    initYaw =angles.firstAngle;
+    
+    
+    rb = hardwareMap.dcMotor.get("rb");
+    lb = hardwareMap.dcMotor.get("lb");
+    lf = hardwareMap.dcMotor.get("lf");
+     rf = hardwareMap.dcMotor.get("rf");
+     arm = hardwareMap.dcMotor.get("arm");
+    claw = hardwareMap.servo.get("claw");
+    flip = hardwareMap.servo.get("flip");
+  
+   
+     rb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+     lb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+     lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+     rf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+lf.setDirection(DcMotor.Direction.REVERSE);
+   
+     
+
+    waitForStart();
+    if (opModeIsActive()) {
+      // Put run blocks here.
+      
+      while (opModeIsActive()) {
+        // Put loop blocks here.
+        // The Y axis of a joystick ranges from -1 in its topmost position
+        // to +1 in its bottommost position. We negate this value so that
+        // the topmost position corresponds to maximum forward power.
+        
+        //double forward = -gamepad1.left_stick_y;
+//double strafe = gamepad1.left_stick_x;
+//double turn = gamepad1.right_stick_x;
+
+
+angles=imu.getAngularOrientation(AxesReference.INTRINSIC,AxesOrder.ZYX ,AngleUnit.DEGREES );
+
+
+double zerodYaw = -initYaw+angles.firstAngle;
+
+double x = gamepad1.left_stick_x;
+double y = -gamepad1.left_stick_y;
+double turn = gamepad1.right_stick_x;
+
+double theta = Math.atan2(y,x) * 180/Math.PI;
+double realTheta;
+realTheta= (360 - zerodYaw) + theta;
+double power = Math.hypot (x,y);
+
+double sin = Math.sin((realTheta * (Math.PI / 180)) -Math.PI/4);
+double cos = Math.sin((realTheta * (Math.PI / 180)) -Math.PI/4);
+double maxSinCos = Math.max(Math.abs(sin),Math.abs(cos));
+
+double lfront = (power * cos / maxSinCos + turn);
+double lback = (power * sin / maxSinCos + turn);
+double rfront = (power * sin / maxSinCos - turn);
+double rback = (power * cos / maxSinCos - turn);
+
+if ((power + Math.abs(turn)) > 1){
+  lfront/=power+turn;
+  lback/=power+turn;
+  rfront/=power-turn;
+  rback/=power-turn;
+}
+lf.setPower(lfront);
+lb.setPower(lback);
+rf.setPower(rfront);
+rb.setPower(rback);
+
+
+}}
+}
+}
